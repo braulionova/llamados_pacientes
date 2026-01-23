@@ -1,0 +1,39 @@
+{
+  "name": "llamados-dra-reyes",
+  "version": "1.0.0",
+  "description": "Sistema de llamado en tiempo real para consultorio médico - Dra. Reyes",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build": "echo 'Build completed'",
+    "vercel-build": "npm run build"
+  },
+  "keywords": [
+    "supabase",
+    "websocket",
+    "real-time",
+    "llamados",
+    "consultorio",
+    "medico",
+    "vercel",
+    "dominican-republic"
+  ],
+  "author": "Consultorio Dra. Reyes",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@vercel/node": "^3.0.0"
+  }
+}

@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Llamados Automático - Dra. Reyes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
+
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    header p {
+      font-size: 1.2em;
+      opacity: 0.95;
+    }
+
+    .status-container {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      font-size: 1.5em;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .status-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.connected {
+      background: #28a745;
+      box-shadow: 0 0 10px #28a745;
+    }
+
+    .status-indicator.disconnected {
+      background: #dc3545;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+      }
+    }
+
+    .display-area {
+      background: white;
+      border-radius: 15px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .llamado-actual {
+      display: none;
+    }
+
+    .llamado-actual.activo {
+      display: block;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .turno-numero {
+      font-size: 4em;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+
+    .paciente-nombre {
+      font-size: 3em;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 30px;
+      min-height: 1.2em;
+    }
+
+    .consultorio-info {
+      font-size: 2em;
+      color: #666;
+      background: #f0f0f0;
+      padding: 20px 40px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .consultorio-numero {
+      font-size: 3em;
+      font-weight: bold;
+      color: #764ba2;
+    }
+
+    .empty-state {
+      font-size: 1.5em;
+      color: #999;
+    }
+
+    .event-log {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .event-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      border-radius: 4px;
+      font-size: 0.9em;
+      animation: slideInLeft 0.3s ease-out;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .event-item.nuevo {
+      border-left-color: #28a745;
+      background: #d4edda;
+    }
+
+    .time {
+      font-size: 0.8em;
+      color: #999;
+    }
+
+    .settings {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .setting-group {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .setting-group label {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .setting-group input[type="range"] {
+      flex: 0 0 200px;
+    }
+
+    .setting-group input[type="number"] {
+      width: 100px;
+      padding: 5px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .setting-group select {
+      padding: 5px 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.02);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .volume-display {
+      text-align: center;
+      font-weight: bold;
+      color: #667eea;
+      min-width: 50px;
+    }
+
+    .speed-display {
+      text-align: center;
+      font-weight: bold;
+      color: #667eea;
+      min-width: 50px;
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 2em;
+      }
+
+      .turno-numero {
+        font-size: 3em;
+      }
+
+      .paciente-nombre {
+        font-size: 2em;
+      }
+
+      .consultorio-info {
+        font-size: 1.3em;
+      }
+
+      .consultorio-numero {
+        font-size: 2em;
+      }
+
+      .display-area {
+        min-height: 250px;
+        padding: 20px;
+      }
+
+      .setting-group {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .setting-group input[type="range"] {
+        width: 100%;
+      }
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      animation: slideInRight 0.5s ease-out;
+      max-width: 300px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .notification.success {
+      border-left: 4px solid #28a745;
+    }
+
+    .notification.error {
+      border-left: 4px solid #dc3545;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid white;
+      border-radius: 10px;
+      padding: 15px;
+      color: white;
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .info-box h3 {
+      margin-bottom: 10px;
+    }
+
+    .info-box p {
+      margin: 5px 0;
+      font-size: 0.95em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏥 Sistema de Llamados Automático</h1>
+      <p>Consultorio Dra. Reyes</p>
+    </header>
+
+    <div class="status-container">
+      <div class="status">
+        <div class="status-indicator disconnected" id="statusIndicator"></div>
+        <span id="statusText">Conectando...</span>
+      </div>
+    </div>
+
+    <div class="display-area">
+      <div class="llamado-actual" id="llamadoActual">
+        <div class="turno-numero" id="turnoNumero"></div>
+        <div class="paciente-nombre" id="pacienteNombre"></div>
+        <div class="consultorio-info">
+          Favor pasar al
+          <div class="consultorio-numero" id="consultorioNumero"></div>
+        </div>
+      </div>
+      <div class="empty-state" id="emptyState">
+        Esperando nuevos llamados...
+      </div>
+    </div>
+
+    <div class="event-log">
+      <div id="eventLog"></div>
+    </div>
+
+    <div class="settings">
+      <h3>⚙️ Configuración</h3>
+
+      <div class="setting-group">
+        <label for="volumeRange">Volumen:</label>
+        <input type="range" id="volumeRange" min="0" max="100" value="80">
+        <div class="volume-display" id="volumeDisplay">80%</div>
+      </div>
+
+      <div class="setting-group">
+        <label for="speedRange">Velocidad de voz:</label>
+        <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1">
+        <div class="speed-display" id="speedDisplay">1x</div>
+      </div>
+
+      <div class="setting-group">
+        <label for="languageSelect">Idioma:</label>
+        <select id="languageSelect">
+          <option value="es-DO" selected>🇩🇴 Español (República Dominicana)</option>
+          <option value="es-ES">Español (España)</option>
+          <option value="es-MX">Español (México)</option>
+          <option value="es-AR">Español (Argentina)</option>
+          <option value="es-CO">Español (Colombia)</option>
+          <option value="es-PE">Español (Perú)</option>
+          <option value="en-US">Inglés (US)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="delayInput">Retraso antes de reproducir (ms):</label>
+        <input type="number" id="delayInput" value="1000" min="0" step="100">
+      </div>
+
+      <div class="button-group">
+        <button onclick="testAudio()">🔊 Prueba de Audio</button>
+        <button onclick="limpiarLog()">🗑️ Limpiar Log</button>
+      </div>
+
+      <div class="info-box">
+        <h3>ℹ️ Información</h3>
+        <p><strong>Estado:</strong> <span id="infoStatus">Conectando...</span></p>
+        <p><strong>Llamados reproducidos:</strong> <span id="infoCount">0</span></p>
+        <p><strong>Voz activa:</strong> <span id="infoVoice">Cargando...</span></p>
+        <p><strong>Última actualización:</strong> <span id="infoTime">-</span></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Estado del sistema
+    const state = {
+      connected: false,
+      reproducidos: 0,
+      cliente: null,
+      ultimaActualizacion: null,
+      synth: window.speechSynthesis,
+      voices: []
+    };
+
+    /**
+     * Actualizar información de voz activa
+     */
+    function updateVoiceInfo() {
+      const languageCode = document.getElementById('languageSelect').value;
+      const bestVoice = getBestVoice(languageCode);
+      const voiceInfo = document.getElementById('infoVoice');
+      
+      if (bestVoice) {
+        voiceInfo.textContent = `${bestVoice.name} (${bestVoice.lang})`;
+      } else {
+        voiceInfo.textContent = `Voz no disponible para ${languageCode}`;
+      }
+    }
+
+    /**
+     * Inicializar voces disponibles
+     */
+    function initVoices() {
+      state.voices = state.synth.getVoices();
+      if (state.voices.length === 0) {
+        state.synth.onvoiceschanged = () => {
+          state.voices = state.synth.getVoices();
+          console.log('🎤 Voces disponibles:', state.voices.map(v => `${v.name} (${v.lang})`));
+          updateVoiceInfo();
+        };
+      } else {
+        console.log('🎤 Voces disponibles:', state.voices.map(v => `${v.name} (${v.lang})`));
+        updateVoiceInfo();
+      }
+    }
+
+    /**
+     * Obtener mejor voz para el idioma seleccionado
+     */
+    function getBestVoice(languageCode) {
+      // Prioridades específicas por idioma
+      const voicePriorities = {
+        'es-DO': [
+          // Buscar voces dominicanas específicas
+          v => v.lang === 'es-DO' || v.name.toLowerCase().includes('dominican'),
+          // Si no hay dominicana, buscar caribeñas
+          v => v.lang === 'es-CU' || v.lang === 'es-PR' || v.name.toLowerCase().includes('caribbean'),
+          // Si no, buscar latinoamericanas
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES'),
+          // Finalmente, cualquier voz en español
+          v => v.lang.startsWith('es-')
+        ],
+        'es-ES': [
+          v => v.lang === 'es-ES',
+          v => v.lang.startsWith('es-')
+        ],
+        'es-MX': [
+          v => v.lang === 'es-MX',
+          v => v.name.toLowerCase().includes('mexico'),
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES')
+        ],
+        'es-AR': [
+          v => v.lang === 'es-AR',
+          v => v.name.toLowerCase().includes('argentina'),
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES')
+        ],
+        'es-CO': [
+          v => v.lang === 'es-CO',
+          v => v.name.toLowerCase().includes('colombia'),
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES')
+        ],
+        'es-PE': [
+          v => v.lang === 'es-PE',
+          v => v.name.toLowerCase().includes('peru'),
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES')
+        ],
+        'en-US': [
+          v => v.lang === 'en-US',
+          v => v.lang.startsWith('en-')
+        ]
+      };
+
+      const priorities = voicePriorities[languageCode] || [
+        v => v.lang.startsWith(languageCode.split('-')[0])
+      ];
+
+      // Intentar encontrar la mejor voz según las prioridades
+      for (const priority of priorities) {
+        const voice = state.voices.find(priority);
+        if (voice) {
+          console.log(`🎤 Voz seleccionada: ${voice.name} (${voice.lang}) para ${languageCode}`);
+          return voice;
+        }
+      }
+
+      // Si no se encuentra ninguna voz específica, usar la primera voz del idioma base
+      const baseLanguage = languageCode.split('-')[0];
+      const fallbackVoice = state.voices.find(v => v.lang.startsWith(baseLanguage));
+      
+      if (fallbackVoice) {
+        console.log(`🎤 Voz alternativa: ${fallbackVoice.name} (${fallbackVoice.lang}) para ${languageCode}`);
+        return fallbackVoice;
+      }
+
+      console.warn(`⚠️ No se encontró voz para ${languageCode}, usando voz por defecto`);
+      return null;
+    }
+
+    /**
+     * Reproducir audio con síntesis de voz
+     */
+    async function reproducirLlamado(turno, paciente, consultorio) {
+      const delay = parseInt(document.getElementById('delayInput').value);
+      
+      // Esperar el retraso configurado
+      await new Promise(r => setTimeout(r, delay));
+
+      const languageCode = document.getElementById('languageSelect').value;
+      const velocity = parseFloat(document.getElementById('speedRange').value);
+      const volume = parseInt(document.getElementById('volumeRange').value) / 100;
+
+      // Texto adaptado para República Dominicana
+      let texto;
+      if (languageCode === 'es-DO') {
+        texto = `${paciente}, favor pasar al consultorio de la doctora Jenifer Reyes`;
+      } else {
+        texto = `${paciente}, favor pasar al consultorio de la doctora Jenifer Reyes`;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(texto);
+      utterance.lang = languageCode;
+      utterance.rate = velocity;
+      utterance.volume = volume;
+      utterance.pitch = 1;
+
+      // Obtener la mejor voz disponible
+      const bestVoice = getBestVoice(languageCode);
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+      }
+
+      state.synth.speak(utterance);
+      
+      addLog(`🔊 Reproduciendo (${languageCode}): Turno ${turno} - ${paciente}`);
+    }
+
+    /**
+     * Prueba de audio
+     */
+    function testAudio() {
+      reproducirLlamado(999, 'Test de Sistema', 1);
+    }
+
+    /**
+     * Mostrar llamado en pantalla
+     */
+    function mostrarLlamado(turno, paciente, consultorio) {
+      const llamadoActual = document.getElementById('llamadoActual');
+      const emptyState = document.getElementById('emptyState');
+
+      document.getElementById('turnoNumero').textContent = turno;
+      document.getElementById('pacienteNombre').textContent = paciente;
+      document.getElementById('consultorioNumero').textContent = consultorio;
+
+      emptyState.style.display = 'none';
+      llamadoActual.classList.remove('activo');
+      // Trigger reflow para reiniciar animación
+      void llamadoActual.offsetWidth;
+      llamadoActual.classList.add('activo');
+
+      // Ocultar después de 20 segundos
+      setTimeout(() => {
+        llamadoActual.classList.remove('activo');
+        emptyState.style.display = 'block';
+      }, 20000);
+    }
+
+    /**
+     * Agregar evento al log
+     */
+    function addLog(message) {
+      const eventLog = document.getElementById('eventLog');
+      const item = document.createElement('div');
+      item.className = 'event-item nuevo';
+      const time = new Date().toLocaleTimeString();
+      item.innerHTML = `
+        <div><strong>${time}</strong></div>
+        <div>${message}</div>
+      `;
+      eventLog.insertBefore(item, eventLog.firstChild);
+
+      // Limitar a 20 eventos
+      while (eventLog.children.length > 20) {
+        eventLog.removeChild(eventLog.lastChild);
+      }
+
+      state.ultimaActualizacion = new Date();
+      document.getElementById('infoTime').textContent = state.ultimaActualizacion.toLocaleTimeString();
+    }
+
+    /**
+     * Limpiar log
+     */
+    function limpiarLog() {
+      document.getElementById('eventLog').innerHTML = '';
+      addLog('📝 Log limpiado');
+    }
+
+    /**
+     * Actualizar estado de conexión
+     */
+    function updateStatus(connected) {
+      state.connected = connected;
+      const indicator = document.getElementById('statusIndicator');
+      const statusText = document.getElementById('statusText');
+      const infoStatus = document.getElementById('infoStatus');
+
+      if (connected) {
+        indicator.classList.remove('disconnected');
+        indicator.classList.add('connected');
+        statusText.textContent = '🟢 Conectado';
+        infoStatus.textContent = 'En línea';
+        document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      } else {
+        indicator.classList.remove('connected');
+        indicator.classList.add('disconnected');
+        statusText.textContent = '⚫ Desconectado';
+        infoStatus.textContent = 'Sin conexión';
+        document.body.style.background = 'linear-gradient(135deg, #999 0%, #666 100%)';
+      }
+    }
+
+    /**
+     * Cliente WebSocket
+     */
+    class LlamadosClient {
+      constructor(url = 'ws://localhost:8000') {
+        this.url = url;
+        this.ws = null;
+        this.reconnectInterval = 3000;
+        this.listeners = {};
+      }
+
+      connect() {
+        return new Promise((resolve, reject) => {
+          try {
+            this.ws = new WebSocket(this.url);
+
+            this.ws.onopen = () => {
+              console.log('✅ Conectado');
+              this.emit('connected');
+              // Iniciar heartbeat
+              this.startHeartbeat();
+              resolve();
+            };
+
+            this.ws.onmessage = (event) => {
+              const message = JSON.parse(event.data);
+              // Responder a pings del servidor
+              if (message.type === 'pong') {
+                // Solo confirmar recepción, no hacer nada
+                return;
+              }
+              this.emit(message.type, message);
+            };
+
+            this.ws.onerror = (error) => {
+              console.error('❌ Error:', error);
+              this.emit('error', error);
+              reject(error);
+            };
+
+            this.ws.onclose = () => {
+              console.log('🔌 Desconectado');
+              this.emit('disconnected');
+              this.stopHeartbeat();
+              this.attemptReconnect();
+            };
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      startHeartbeat() {
+        // Enviar ping cada 25 segundos para mantener conexión viva
+        this.heartbeatInterval = setInterval(() => {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+              type: 'ping',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }, 25000);
+      }
+
+      stopHeartbeat() {
+        if (this.heartbeatInterval) {
+          clearInterval(this.heartbeatInterval);
+        }
+      }
+
+      attemptReconnect() {
+        setTimeout(() => {
+          this.connect().catch(() => this.attemptReconnect());
+        }, this.reconnectInterval);
+      }
+
+      disconnect() {
+        this.stopHeartbeat();
+        if (this.ws) this.ws.close();
+      }
+
+      on(event, callback) {
+        if (!this.listeners[event]) this.listeners[event] = [];
+        this.listeners[event].push(callback);
+      }
+
+      emit(event, data) {
+        if (this.listeners[event]) {
+          this.listeners[event].forEach(callback => callback(data));
+        }
+      }
+    }
+
+    /**
+     * Inicialización
+     */
+    async function init() {
+      initVoices();
+      addLog('🔄 Iniciando sistema...');
+
+      state.cliente = new LlamadosClient();
+
+      state.cliente.on('connected', () => {
+        updateStatus(true);
+        addLog('✅ Conectado al servidor');
+      });
+
+      state.cliente.on('disconnected', () => {
+        updateStatus(false);
+        addLog('❌ Desconectado del servidor (intentando reconectar)');
+      });
+
+      state.cliente.on('nuevo_llamado', async (message) => {
+        const { data } = message;
+        addLog(`📣 NUEVO LLAMADO: ${data.paciente_nombre} (Turno ${data.turno_numero})`);
+        
+        mostrarLlamado(data.turno_numero, data.paciente_nombre, data.consultorio);
+        
+        await reproducirLlamado(
+          data.turno_numero,
+          data.paciente_nombre,
+          data.consultorio
+        );
+
+        state.reproducidos++;
+        document.getElementById('infoCount').textContent = state.reproducidos;
+      });
+
+      state.cliente.on('error', (error) => {
+        addLog(`❌ Error: ${error.message}`);
+      });
+
+      try {
+        await state.cliente.connect();
+      } catch (error) {
+        addLog(`❌ Error de conexión: ${error.message}`);
+      }
+    }
+
+    // Event listeners para configuración
+    document.getElementById('volumeRange').addEventListener('input', (e) => {
+      document.getElementById('volumeDisplay').textContent = e.target.value + '%';
+    });
+
+    document.getElementById('speedRange').addEventListener('input', (e) => {
+      const speed = (parseFloat(e.target.value) * 10).toFixed(0) / 10;
+      document.getElementById('speedDisplay').textContent = speed + 'x';
+    });
+
+    document.getElementById('languageSelect').addEventListener('change', () => {
+      updateVoiceInfo();
+      addLog('🌐 Idioma cambiado');
+    });
+
+    // Iniciar cuando carga la página
+    window.addEventListener('load', init);
+
+    window.addEventListener('beforeunload', () => {
+      if (state.cliente) state.cliente.disconnect();
+    });
+  </script>
+</body>
+</html>

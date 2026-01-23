@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Llamados - Consultorio Dra. Reyes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.3em;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      color: #555;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1em;
+      transition: border-color 0.3s;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.02);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .status {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-weight: 500;
+    }
+
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+
+    .status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+      border-left: 4px solid #dc3545;
+    }
+
+    .llamado-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .llamado-item {
+      background: #f8f9fa;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+    }
+
+    .llamado-item.reproducido {
+      opacity: 0.6;
+      border-left-color: #28a745;
+    }
+
+    .llamado-item p {
+      margin: 5px 0;
+      color: #333;
+    }
+
+    .llamado-item strong {
+      color: #667eea;
+    }
+
+    .evento {
+      background: #f8f9fa;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      border-left: 3px solid #667eea;
+    }
+
+    .evento.nuevo {
+      border-left-color: #28a745;
+      background: #d4edda;
+    }
+
+    .evento.reproducido {
+      border-left-color: #ffc107;
+      background: #fff3cd;
+    }
+
+    .time {
+      font-size: 0.8em;
+      color: #999;
+      margin-top: 5px;
+    }
+
+    .log {
+      max-height: 300px;
+      overflow-y: auto;
+      background: #1e1e1e;
+      color: #00ff00;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 2em;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏥 Sistema de Llamados</h1>
+      <p>Consultorio Dra. Reyes - Tiempo Real</p>
+    </header>
+
+    <div class="grid">
+      <!-- Panel de Control -->
+      <div class="card">
+        <h2>📞 Panel de Control</h2>
+
+        <div id="status" class="status disconnected">
+          ⚫ Desconectado
+        </div>
+
+        <div class="form-group">
+          <label>Número de Turno</label>
+          <input type="number" id="turno" placeholder="15" value="15">
+        </div>
+
+        <div class="form-group">
+          <label>Nombre del Paciente</label>
+          <input type="text" id="paciente" placeholder="Juan Pérez" value="Juan Pérez">
+        </div>
+
+        <div class="form-group">
+          <label>Consultorio</label>
+          <select id="consultorio">
+            <option value="1">Consultorio 1</option>
+            <option value="2">Consultorio 2</option>
+            <option value="3" selected>Consultorio 3</option>
+            <option value="4">Consultorio 4</option>
+            <option value="5">Consultorio 5</option>
+          </select>
+        </div>
+
+        <button onclick="crearLlamado()">🔊 Crear Llamado</button>
+
+        <hr style="margin: 20px 0; opacity: 0.3;">
+
+        <button onclick="obtenerPendientes()" style="background: #17a2b8; margin-bottom: 10px;">
+          ⏳ Ver Pendientes
+        </button>
+        <button onclick="obtenerUltimos()" style="background: #28a745;">
+          📋 Últimos Llamados
+        </button>
+      </div>
+
+      <!-- Llamados Activos -->
+      <div class="card">
+        <h2>📣 Llamados Activos</h2>
+        <div id="llamados" class="llamado-list">
+          <p style="color: #999; text-align: center;">Esperando llamados...</p>
+        </div>
+      </div>
+
+      <!-- Eventos en Tiempo Real -->
+      <div class="card">
+        <h2>⚡ Eventos en Tiempo Real</h2>
+        <div id="eventos" class="llamado-list">
+          <p style="color: #999; text-align: center;">Esperando eventos...</p>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <h2>📝 Log de Sistema</h2>
+        <div id="log" class="log">
+          <div class="log-entry">[INIT] Sistema iniciado...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let client = null;
+
+    /**
+     * Cliente WebSocket para el navegador
+     */
+    class LlamadosClient {
+      constructor(url = 'ws://localhost:8000') {
+        this.url = url;
+        this.ws = null;
+        this.reconnectInterval = 3000;
+        this.listeners = {};
+      }
+
+      connect() {
+        return new Promise((resolve, reject) => {
+          try {
+            this.ws = new WebSocket(this.url);
+
+            this.ws.onopen = () => {
+              console.log('✅ Conectado');
+              this.emit('connected');
+              resolve();
+            };
+
+            this.ws.onmessage = (event) => {
+              const message = JSON.parse(event.data);
+              console.log('📨', message);
+              this.emit(message.type, message);
+            };
+
+            this.ws.onerror = (error) => {
+              console.error('❌ Error:', error);
+              this.emit('error', error);
+              reject(error);
+            };
+
+            this.ws.onclose = () => {
+              console.log('🔌 Desconectado');
+              this.emit('disconnected');
+              this.attemptReconnect();
+            };
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      attemptReconnect() {
+        setTimeout(() => {
+          this.connect().catch(() => this.attemptReconnect());
+        }, this.reconnectInterval);
+      }
+
+      disconnect() {
+        if (this.ws) this.ws.close();
+      }
+
+      ping() {
+        this.send({ type: 'ping' });
+      }
+
+      reportarReproduccion(id) {
+        this.send({ type: 'reproducir', id });
+      }
+
+      send(message) {
+        if (this.ws && this.ws.readyState === 1) {
+          this.ws.send(JSON.stringify(message));
+        }
+      }
+
+      on(event, callback) {
+        if (!this.listeners[event]) this.listeners[event] = [];
+        this.listeners[event].push(callback);
+      }
+
+      emit(event, data) {
+        if (this.listeners[event]) {
+          this.listeners[event].forEach(callback => callback(data));
+        }
+      }
+    }
+
+    /**
+     * Funciones de UI
+     */
+    function log(message) {
+      const logDiv = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function updateStatus(connected) {
+      const status = document.getElementById('status');
+      if (connected) {
+        status.textContent = '🟢 Conectado';
+        status.className = 'status connected';
+      } else {
+        status.textContent = '⚫ Desconectado';
+        status.className = 'status disconnected';
+      }
+    }
+
+    async function crearLlamado() {
+      const turno = document.getElementById('turno').value;
+      const paciente = document.getElementById('paciente').value;
+      const consultorio = document.getElementById('consultorio').value;
+
+      try {
+        log(`➕ Creando llamado para ${paciente} (Turno ${turno})`);
+        const response = await fetch('http://localhost:8000/api/llamados/crear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ turno_numero: turno, paciente_nombre: paciente, consultorio })
+        });
+
+        const result = await response.json();
+        if (result.status === 'success') {
+          log('✅ Llamado creado correctamente');
+        }
+      } catch (error) {
+        log(`❌ Error: ${error.message}`);
+      }
+    }
+
+    async function obtenerPendientes() {
+      try {
+        log('⏳ Obteniendo llamados pendientes...');
+        const response = await fetch('http://localhost:8000/api/llamados/pendientes');
+        const result = await response.json();
+
+        const llamadosDiv = document.getElementById('llamados');
+        llamadosDiv.innerHTML = '';
+
+        if (result.data) {
+          const item = document.createElement('div');
+          item.className = 'llamado-item';
+          item.innerHTML = `
+            <p><strong>Turno:</strong> ${result.data.turno_numero}</p>
+            <p><strong>Paciente:</strong> ${result.data.paciente_nombre}</p>
+            <p><strong>Consultorio:</strong> ${result.data.consultorio}</p>
+            <p><strong>Texto:</strong> ${result.data.texto_completo}</p>
+            <div class="time">${new Date(result.data.created_at).toLocaleString()}</div>
+          `;
+          llamadosDiv.appendChild(item);
+          log('✅ Pendiente cargado');
+        } else {
+          llamadosDiv.innerHTML = '<p style="color: #999; text-align: center;">✅ No hay pendientes</p>';
+          log('ℹ️ No hay llamados pendientes');
+        }
+      } catch (error) {
+        log(`❌ Error: ${error.message}`);
+      }
+    }
+
+    async function obtenerUltimos() {
+      try {
+        log('📋 Obteniendo últimos 10 llamados...');
+        const response = await fetch('http://localhost:8000/api/llamados?limit=10');
+        const result = await response.json();
+
+        const llamadosDiv = document.getElementById('llamados');
+        llamadosDiv.innerHTML = '';
+
+        if (result.data && result.data.length > 0) {
+          result.data.forEach(llamado => {
+            const item = document.createElement('div');
+            item.className = `llamado-item ${llamado.reproducido ? 'reproducido' : ''}`;
+            item.innerHTML = `
+              <p><strong>Turno ${llamado.turno_numero}:</strong> ${llamado.paciente_nombre}</p>
+              <p>Consultorio ${llamado.consultorio} ${llamado.reproducido ? '✅' : '⏳'}</p>
+              <div class="time">${new Date(llamado.created_at).toLocaleString()}</div>
+            `;
+            llamadosDiv.appendChild(item);
+          });
+          log(`✅ ${result.data.length} llamados cargados`);
+        }
+      } catch (error) {
+        log(`❌ Error: ${error.message}`);
+      }
+    }
+
+    function addEvento(tipo, message) {
+      const eventosDiv = document.getElementById('eventos');
+      const evento = document.createElement('div');
+      evento.className = `evento ${tipo}`;
+      evento.innerHTML = `
+        <strong>${tipo === 'nuevo' ? '📣' : '🔊'} ${tipo.toUpperCase()}</strong><br>
+        ${JSON.stringify(message, null, 2)}
+      `;
+      eventosDiv.insertBefore(evento, eventosDiv.firstChild);
+
+      // Limitar a últimos 20 eventos
+      while (eventosDiv.children.length > 20) {
+        eventosDiv.removeChild(eventosDiv.lastChild);
+      }
+    }
+
+    /**
+     * Inicialización
+     */
+    async function init() {
+      log('🔄 Conectando al servidor...');
+
+      client = new LlamadosClient();
+
+      client.on('connected', () => {
+        updateStatus(true);
+        log('✅ Conectado al servidor');
+        client.ping();
+      });
+
+      client.on('disconnected', () => {
+        updateStatus(false);
+        log('❌ Desconectado del servidor');
+      });
+
+      client.on('nuevo_llamado', (message) => {
+        log(`📣 Nuevo llamado: ${message.data.paciente_nombre} (Turno ${message.data.turno_numero})`);
+        addEvento('nuevo', message.data);
+      });
+
+      client.on('llamado_reproducido', (message) => {
+        log(`🔊 Llamado reproducido: ID ${message.id}`);
+        addEvento('reproducido', { id: message.id });
+      });
+
+      client.on('pong', () => {
+        log('🏓 Pong recibido');
+      });
+
+      try {
+        await client.connect();
+      } catch (error) {
+        log(`❌ Error de conexión: ${error.message}`);
+      }
+    }
+
+    // Iniciar cuando carga la página
+    window.addEventListener('load', init);
+    window.addEventListener('beforeunload', () => {
+      if (client) client.disconnect();
+    });
+  </script>
+</body>
+</html>
