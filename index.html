@@ -405,8 +405,8 @@
 
       <div class="setting-group">
         <label for="volumeRange">Volumen:</label>
-        <input type="range" id="volumeRange" min="0" max="100" value="80">
-        <div class="volume-display" id="volumeDisplay">80%</div>
+        <input type="range" id="volumeRange" min="0" max="100" value="100">
+        <div class="volume-display" id="volumeDisplay">100%</div>
       </div>
 
       <div class="setting-group">
@@ -589,21 +589,37 @@
         texto = `${paciente}, favor pasar al consultorio de la doctora Jenifer Reyes`;
       }
 
-      const utterance = new SpeechSynthesisUtterance(texto);
-      utterance.lang = languageCode;
-      utterance.rate = velocity;
-      utterance.volume = volume;
-      utterance.pitch = 1;
+      // Función para reproducir una vez
+      const reproducirUnaVez = () => {
+        return new Promise((resolve) => {
+          const utterance = new SpeechSynthesisUtterance(texto);
+          utterance.lang = languageCode;
+          utterance.rate = velocity;
+          utterance.volume = volume;
+          utterance.pitch = 1;
 
-      // Obtener la mejor voz disponible
-      const bestVoice = getBestVoice(languageCode);
-      if (bestVoice) {
-        utterance.voice = bestVoice;
-      }
+          // Obtener la mejor voz disponible
+          const bestVoice = getBestVoice(languageCode);
+          if (bestVoice) {
+            utterance.voice = bestVoice;
+          }
 
-      state.synth.speak(utterance);
+          utterance.onend = () => resolve();
+          state.synth.speak(utterance);
+        });
+      };
+
+      // Reproducir dos veces con espera de 2 segundos entre ellas
+      addLog(`🔊 Reproduciendo (${languageCode}) - Primera vez: Turno ${turno} - ${paciente}`);
+      await reproducirUnaVez();
       
-      addLog(`🔊 Reproduciendo (${languageCode}): Turno ${turno} - ${paciente}`);
+      // Esperar 2 segundos antes de la segunda reproducción
+      await new Promise(r => setTimeout(r, 2000));
+      
+      addLog(`🔊 Reproduciendo (${languageCode}) - Segunda vez: Turno ${turno} - ${paciente}`);
+      await reproducirUnaVez();
+      
+      addLog(`✅ Completadas 2 reproducciones para Turno ${turno} - ${paciente}`);
     }
 
     /**
