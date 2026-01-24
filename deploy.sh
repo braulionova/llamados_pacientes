@@ -16,7 +16,7 @@ if [ ! -f ".env" ]; then
     echo "📝 Creando archivo .env de ejemplo..."
     cat > .env << EOL
 SUPABASE_URL=https://jyltuehmusxsmkoamyhu.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bHR1ZWhtdXN4c21rb2FteWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1NzU4NTIsImV4cCI6MjA1ODE1MTg1Mn0.9qR5fpq4RzT_lVi6nrDEWHWgMHQJfLRz1f23ULEa-ko
+SUPABASE_KEY=YOUR_SUPABASE_ANON_KEY_HERE
 NODE_ENV=production
 EOL
     echo "❗ Por favor, completa las variables en .env"

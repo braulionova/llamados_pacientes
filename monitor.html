@@ -397,9 +397,9 @@
   </div>
 
   <script>
-    // Configuración de Supabase
-    const SUPABASE_URL = 'https://jyltuehmusxsmkoamyhu.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bHR1ZWhtdXN4c21rb2FteWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1NzU4NTIsImV4cCI6MjA1ODE1MTg1Mn0.9qR5fpq4RzT_lVi6nrDEWHWgMHQJfLRz1f23ULEa-ko';
+    // Configuración de Supabase - cargar desde variables de entorno
+    const SUPABASE_URL = process.env.SUPABASE_URL || 'https://jyltuehmusxsmkoamyhu.supabase.co';
+    const SUPABASE_KEY = process.env.SUPABASE_KEY || 'YOUR_SUPABASE_ANON_KEY_HERE';
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
