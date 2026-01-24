@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Llamados - Consultorio Dra. Reyes</title>
+  <title>Sistema de Llamados Automático - Dra. Reyes</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
       margin: 0;
@@ -12,95 +13,245 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       padding: 20px;
+      color: #333;
     }
 
     .container {
-      max-width: 1200px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: 900px;
     }
 
     header {
       text-align: center;
       color: white;
-      margin-bottom: 40px;
-    }
-
-    header h1 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
-    }
-
-    header p {
-      font-size: 1.1em;
-      opacity: 0.9;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 20px;
       margin-bottom: 30px;
     }
 
-    .card {
+    header h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    header p {
+      font-size: 1.2em;
+      opacity: 0.95;
+    }
+
+    .status-container {
       background: white;
-      border-radius: 12px;
-      padding: 25px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-      transition: transform 0.3s ease;
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-    }
-
-    .card h2 {
-      color: #333;
+      border-radius: 15px;
+      padding: 30px;
       margin-bottom: 20px;
-      font-size: 1.3em;
-      border-bottom: 2px solid #667eea;
-      padding-bottom: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     }
 
-    .form-group {
-      margin-bottom: 15px;
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      font-size: 1.5em;
+      font-weight: bold;
+      margin-bottom: 20px;
     }
 
-    label {
+    .status-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.connected {
+      background: #28a745;
+      box-shadow: 0 0 10px #28a745;
+    }
+
+    .status-indicator.disconnected {
+      background: #dc3545;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+      }
+    }
+
+    .display-area {
+      background: white;
+      border-radius: 15px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .llamado-actual {
+      display: none;
+    }
+
+    .llamado-actual.activo {
       display: block;
-      color: #555;
-      margin-bottom: 5px;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .turno-numero {
+      font-size: 4em;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+
+    .paciente-nombre {
+      font-size: 3em;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 30px;
+      min-height: 1.2em;
+    }
+
+    .consultorio-info {
+      font-size: 2em;
+      color: #666;
+      background: #f0f0f0;
+      padding: 20px 40px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .consultorio-numero {
+      font-size: 3em;
+      font-weight: bold;
+      color: #764ba2;
+    }
+
+    .empty-state {
+      font-size: 1.5em;
+      color: #999;
+    }
+
+    .event-log {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .event-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      border-radius: 4px;
+      font-size: 0.9em;
+      animation: slideInLeft 0.3s ease-out;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .event-item.nuevo {
+      border-left-color: #28a745;
+      background: #d4edda;
+    }
+
+    .time {
+      font-size: 0.8em;
+      color: #999;
+    }
+
+    .settings {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .setting-group {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .setting-group label {
+      flex: 1;
       font-weight: 500;
     }
 
-    input,
-    select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 1em;
-      transition: border-color 0.3s;
+    .setting-group input[type="range"] {
+      flex: 0 0 200px;
     }
 
-    input:focus,
-    select:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    .setting-group input[type="number"] {
+      width: 100px;
+      padding: 5px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .setting-group select {
+      padding: 5px 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
     }
 
     button {
-      width: 100%;
+      flex: 1;
       padding: 12px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 1em;
       font-weight: 600;
       cursor: pointer;
@@ -116,91 +267,18 @@
       transform: scale(0.98);
     }
 
-    .status {
-      padding: 15px;
-      border-radius: 6px;
-      margin-bottom: 15px;
-      font-weight: 500;
-    }
-
-    .status.connected {
-      background: #d4edda;
-      color: #155724;
-      border-left: 4px solid #28a745;
-    }
-
-    .status.disconnected {
-      background: #f8d7da;
-      color: #721c24;
-      border-left: 4px solid #dc3545;
-    }
-
-    .llamado-list {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-
-    .llamado-item {
-      background: #f8f9fa;
-      padding: 12px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      border-left: 4px solid #667eea;
-    }
-
-    .llamado-item.reproducido {
-      opacity: 0.6;
-      border-left-color: #28a745;
-    }
-
-    .llamado-item p {
-      margin: 5px 0;
-      color: #333;
-    }
-
-    .llamado-item strong {
+    .volume-display {
+      text-align: center;
+      font-weight: bold;
       color: #667eea;
+      min-width: 50px;
     }
 
-    .evento {
-      background: #f8f9fa;
-      padding: 10px;
-      margin-bottom: 8px;
-      border-radius: 4px;
-      font-size: 0.9em;
-      border-left: 3px solid #667eea;
-    }
-
-    .evento.nuevo {
-      border-left-color: #28a745;
-      background: #d4edda;
-    }
-
-    .evento.reproducido {
-      border-left-color: #ffc107;
-      background: #fff3cd;
-    }
-
-    .time {
-      font-size: 0.8em;
-      color: #999;
-      margin-top: 5px;
-    }
-
-    .log {
-      max-height: 300px;
-      overflow-y: auto;
-      background: #1e1e1e;
-      color: #00ff00;
-      padding: 15px;
-      border-radius: 6px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.85em;
-      line-height: 1.5;
-    }
-
-    .log-entry {
-      margin-bottom: 5px;
+    .speed-display {
+      text-align: center;
+      font-weight: bold;
+      color: #667eea;
+      min-width: 50px;
     }
 
     @media (max-width: 768px) {
@@ -208,156 +286,466 @@
         font-size: 2em;
       }
 
-      .grid {
-        grid-template-columns: 1fr;
+      .turno-numero {
+        font-size: 3em;
       }
+
+      .paciente-nombre {
+        font-size: 2em;
+      }
+
+      .consultorio-info {
+        font-size: 1.3em;
+      }
+
+      .consultorio-numero {
+        font-size: 2em;
+      }
+
+      .display-area {
+        min-height: 250px;
+        padding: 20px;
+      }
+
+      .setting-group {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .setting-group input[type="range"] {
+        width: 100%;
+      }
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      animation: slideInRight 0.5s ease-out;
+      max-width: 300px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .notification.success {
+      border-left: 4px solid #28a745;
+    }
+
+    .notification.error {
+      border-left: 4px solid #dc3545;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid white;
+      border-radius: 10px;
+      padding: 15px;
+      color: white;
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .info-box h3 {
+      margin-bottom: 10px;
+    }
+
+    .info-box p {
+      margin: 5px 0;
+      font-size: 0.95em;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>🏥 Sistema de Llamados</h1>
-      <p>Consultorio Dra. Reyes - Tiempo Real</p>
+      <h1>🏥 Sistema de Llamados Automático</h1>
+      <p>Consultorio Dra. Reyes</p>
     </header>
 
-    <div class="grid">
-      <!-- Panel de Control -->
-      <div class="card">
-        <h2>📞 Panel de Control</h2>
-
-        <div id="status" class="status disconnected">
-          ⚫ Desconectado
-        </div>
-
-        <div class="form-group">
-          <label>Número de Turno</label>
-          <input type="number" id="turno" placeholder="15" value="15">
-        </div>
-
-        <div class="form-group">
-          <label>Nombre del Paciente</label>
-          <input type="text" id="paciente" placeholder="Juan Pérez" value="Juan Pérez">
-        </div>
-
-        <div class="form-group">
-          <label>Consultorio</label>
-          <select id="consultorio">
-            <option value="1">Consultorio 1</option>
-            <option value="2">Consultorio 2</option>
-            <option value="3" selected>Consultorio 3</option>
-            <option value="4">Consultorio 4</option>
-            <option value="5">Consultorio 5</option>
-          </select>
-        </div>
-
-        <button onclick="crearLlamado()">🔊 Crear Llamado</button>
-
-        <hr style="margin: 20px 0; opacity: 0.3;">
-
-        <button onclick="obtenerPendientes()" style="background: #17a2b8; margin-bottom: 10px;">
-          ⏳ Ver Pendientes
-        </button>
-        <button onclick="obtenerUltimos()" style="background: #28a745;">
-          📋 Últimos Llamados
-        </button>
+    <div class="status-container">
+      <div class="status">
+        <div class="status-indicator disconnected" id="statusIndicator"></div>
+        <span id="statusText">Conectando...</span>
       </div>
+    </div>
 
-      <!-- Llamados Activos -->
-      <div class="card">
-        <h2>📣 Llamados Activos</h2>
-        <div id="llamados" class="llamado-list">
-          <p style="color: #999; text-align: center;">Esperando llamados...</p>
+    <div class="display-area">
+      <div class="llamado-actual" id="llamadoActual">
+        <div class="turno-numero" id="turnoNumero"></div>
+        <div class="paciente-nombre" id="pacienteNombre"></div>
+        <div class="consultorio-info">
+          Favor pasar al
+          <div class="consultorio-numero" id="consultorioNumero"></div>
         </div>
       </div>
+      <div class="empty-state" id="emptyState">
+        Esperando nuevos llamados...
+      </div>
+    </div>
 
-      <!-- Eventos en Tiempo Real -->
-      <div class="card">
-        <h2>⚡ Eventos en Tiempo Real</h2>
-        <div id="eventos" class="llamado-list">
-          <p style="color: #999; text-align: center;">Esperando eventos...</p>
-        </div>
+    <div class="event-log">
+      <div id="eventLog"></div>
+    </div>
+
+    <div class="settings">
+      <h3>⚙️ Configuración</h3>
+
+      <div class="setting-group">
+        <label for="volumeRange">Volumen:</label>
+        <input type="range" id="volumeRange" min="0" max="100" value="80">
+        <div class="volume-display" id="volumeDisplay">80%</div>
       </div>
 
-      <!-- Log -->
-      <div class="card" style="grid-column: 1 / -1;">
-        <h2>📝 Log de Sistema</h2>
-        <div id="log" class="log">
-          <div class="log-entry">[INIT] Sistema iniciado...</div>
-        </div>
+      <div class="setting-group">
+        <label for="speedRange">Velocidad de voz:</label>
+        <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1">
+        <div class="speed-display" id="speedDisplay">1x</div>
+      </div>
+
+      <div class="setting-group">
+        <label for="languageSelect">Idioma:</label>
+        <select id="languageSelect">
+          <option value="es-DO" selected>🇩🇴 Español (República Dominicana)</option>
+          <option value="es-ES">Español (España)</option>
+          <option value="es-MX">Español (México)</option>
+          <option value="es-AR">Español (Argentina)</option>
+          <option value="es-CO">Español (Colombia)</option>
+          <option value="es-PE">Español (Perú)</option>
+          <option value="en-US">Inglés (US)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="delayInput">Retraso antes de reproducir (ms):</label>
+        <input type="number" id="delayInput" value="1000" min="0" step="100">
+      </div>
+
+      <div class="button-group">
+        <button onclick="testAudio()">🔊 Prueba de Audio</button>
+        <button onclick="limpiarLog()">🗑️ Limpiar Log</button>
+      </div>
+
+      <div class="info-box">
+        <h3>ℹ️ Información</h3>
+        <p><strong>Estado:</strong> <span id="infoStatus">Conectando...</span></p>
+        <p><strong>Llamados reproducidos:</strong> <span id="infoCount">0</span></p>
+        <p><strong>Voz activa:</strong> <span id="infoVoice">Cargando...</span></p>
+        <p><strong>Última actualización:</strong> <span id="infoTime">-</span></p>
       </div>
     </div>
   </div>
 
-  <script>
-    let client = null;
+<script>
+    // Estado del sistema
+    let SUPABASE_URL = '';
+    let SUPABASE_ANON_KEY = '';
+
+    // Estado del sistema
+    const state = {
+      connected: false,
+      reproducidos: 0,
+      supabase: null,
+      subscription: null,
+      ultimaActualizacion: null,
+      synth: window.speechSynthesis,
+      voices: []
+    };
 
     /**
-     * Cliente WebSocket para el navegador
+     * Actualizar información de voz activa
      */
-    class LlamadosClient {
-      constructor(url = 'ws://localhost:8000') {
-        this.url = url;
-        this.ws = null;
-        this.reconnectInterval = 3000;
+    function updateVoiceInfo() {
+      const languageCode = document.getElementById('languageSelect').value;
+      const bestVoice = getBestVoice(languageCode);
+      const voiceInfo = document.getElementById('infoVoice');
+      
+      if (bestVoice) {
+        voiceInfo.textContent = `${bestVoice.name} (${bestVoice.lang})`;
+      } else {
+        voiceInfo.textContent = `Voz no disponible para ${languageCode}`;
+      }
+    }
+
+    /**
+     * Inicializar voces disponibles
+     */
+    function initVoices() {
+      state.voices = state.synth.getVoices();
+      if (state.voices.length === 0) {
+        state.synth.onvoiceschanged = () => {
+          state.voices = state.synth.getVoices();
+          console.log('🎤 Voces disponibles:', state.voices.map(v => `${v.name} (${v.lang})`));
+          updateVoiceInfo();
+        };
+      } else {
+        console.log('🎤 Voces disponibles:', state.voices.map(v => `${v.name} (${v.lang})`));
+        updateVoiceInfo();
+      }
+    }
+
+    /**
+     * Obtener mejor voz para el idioma seleccionado
+     */
+    function getBestVoice(languageCode) {
+      // Prioridades específicas por idioma
+      const voicePriorities = {
+        'es-DO': [
+          // Buscar voces dominicanas específicas
+          v => v.lang === 'es-DO' || v.name.toLowerCase().includes('dominican'),
+          // Si no hay dominicana, buscar caribeñas
+          v => v.lang === 'es-CU' || v.lang === 'es-PR' || v.name.toLowerCase().includes('caribbean'),
+          // Si no, buscar latinoamericanas
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES'),
+          // Finalmente, cualquier voz en español
+          v => v.lang.startsWith('es-')
+        ],
+        'es-ES': [
+          v => v.lang === 'es-ES',
+          v => v.lang.startsWith('es-')
+        ],
+        'es-MX': [
+          v => v.lang === 'es-MX',
+          v => v.name.toLowerCase().includes('mexico'),
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES')
+        ],
+        'es-AR': [
+          v => v.lang === 'es-AR',
+          v => v.name.toLowerCase().includes('argentina'),
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES')
+        ],
+        'es-CO': [
+          v => v.lang === 'es-CO',
+          v => v.name.toLowerCase().includes('colombia'),
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES')
+        ],
+        'es-PE': [
+          v => v.lang === 'es-PE',
+          v => v.name.toLowerCase().includes('peru'),
+          v => v.lang.startsWith('es-') && !v.lang.includes('ES')
+        ],
+        'en-US': [
+          v => v.lang === 'en-US',
+          v => v.lang.startsWith('en-')
+        ]
+      };
+
+      const priorities = voicePriorities[languageCode] || [
+        v => v.lang.startsWith(languageCode.split('-')[0])
+      ];
+
+      // Intentar encontrar la mejor voz según las prioridades
+      for (const priority of priorities) {
+        const voice = state.voices.find(priority);
+        if (voice) {
+          console.log(`🎤 Voz seleccionada: ${voice.name} (${voice.lang}) para ${languageCode}`);
+          return voice;
+        }
+      }
+
+      // Si no se encuentra ninguna voz específica, usar la primera voz del idioma base
+      const baseLanguage = languageCode.split('-')[0];
+      const fallbackVoice = state.voices.find(v => v.lang.startsWith(baseLanguage));
+      
+      if (fallbackVoice) {
+        console.log(`🎤 Voz alternativa: ${fallbackVoice.name} (${fallbackVoice.lang}) para ${languageCode}`);
+        return fallbackVoice;
+      }
+
+      console.warn(`⚠️ No se encontró voz para ${languageCode}, usando voz por defecto`);
+      return null;
+    }
+
+    /**
+     * Reproducir audio con síntesis de voz
+     */
+    async function reproducirLlamado(turno, paciente, consultorio) {
+      const delay = parseInt(document.getElementById('delayInput').value);
+      
+      // Esperar el retraso configurado
+      await new Promise(r => setTimeout(r, delay));
+
+      const languageCode = document.getElementById('languageSelect').value;
+      const velocity = parseFloat(document.getElementById('speedRange').value);
+      const volume = parseInt(document.getElementById('volumeRange').value) / 100;
+
+      // Texto adaptado para República Dominicana
+      let texto;
+      if (languageCode === 'es-DO') {
+        texto = `${paciente}, favor pasar al consultorio de la doctora Jenifer Reyes`;
+      } else {
+        texto = `${paciente}, favor pasar al consultorio de la doctora Jenifer Reyes`;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(texto);
+      utterance.lang = languageCode;
+      utterance.rate = velocity;
+      utterance.volume = volume;
+      utterance.pitch = 1;
+
+      // Obtener la mejor voz disponible
+      const bestVoice = getBestVoice(languageCode);
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+      }
+
+      state.synth.speak(utterance);
+      
+      addLog(`🔊 Reproduciendo (${languageCode}): Turno ${turno} - ${paciente}`);
+    }
+
+    /**
+     * Prueba de audio
+     */
+    function testAudio() {
+      reproducirLlamado(999, 'Test de Sistema', 1);
+    }
+
+    /**
+     * Mostrar llamado en pantalla
+     */
+    function mostrarLlamado(turno, paciente, consultorio) {
+      const llamadoActual = document.getElementById('llamadoActual');
+      const emptyState = document.getElementById('emptyState');
+
+      document.getElementById('turnoNumero').textContent = turno;
+      document.getElementById('pacienteNombre').textContent = paciente;
+      document.getElementById('consultorioNumero').textContent = consultorio;
+
+      emptyState.style.display = 'none';
+      llamadoActual.classList.remove('activo');
+      // Trigger reflow para reiniciar animación
+      void llamadoActual.offsetWidth;
+      llamadoActual.classList.add('activo');
+
+      // Ocultar después de 20 segundos
+      setTimeout(() => {
+        llamadoActual.classList.remove('activo');
+        emptyState.style.display = 'block';
+      }, 20000);
+    }
+
+    /**
+     * Agregar evento al log
+     */
+    function addLog(message) {
+      const eventLog = document.getElementById('eventLog');
+      const item = document.createElement('div');
+      item.className = 'event-item nuevo';
+      const time = new Date().toLocaleTimeString();
+      item.innerHTML = `
+        <div><strong>${time}</strong></div>
+        <div>${message}</div>
+      `;
+      eventLog.insertBefore(item, eventLog.firstChild);
+
+      // Limitar a 20 eventos
+      while (eventLog.children.length > 20) {
+        eventLog.removeChild(eventLog.lastChild);
+      }
+
+      state.ultimaActualizacion = new Date();
+      document.getElementById('infoTime').textContent = state.ultimaActualizacion.toLocaleTimeString();
+    }
+
+    /**
+     * Limpiar log
+     */
+    function limpiarLog() {
+      document.getElementById('eventLog').innerHTML = '';
+      addLog('📝 Log limpiado');
+    }
+
+    /**
+     * Actualizar estado de conexión
+     */
+    function updateStatus(connected) {
+      state.connected = connected;
+      const indicator = document.getElementById('statusIndicator');
+      const statusText = document.getElementById('statusText');
+      const infoStatus = document.getElementById('infoStatus');
+
+      if (connected) {
+        indicator.classList.remove('disconnected');
+        indicator.classList.add('connected');
+        statusText.textContent = '🟢 Conectado';
+        infoStatus.textContent = 'En línea';
+        document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      } else {
+        indicator.classList.remove('connected');
+        indicator.classList.add('disconnected');
+        statusText.textContent = '⚫ Desconectado';
+        infoStatus.textContent = 'Sin conexión';
+        document.body.style.background = 'linear-gradient(135deg, #999 0%, #666 100%)';
+      }
+    }
+
+    /**
+     * Cliente Supabase Real-time
+     */
+    class SupabaseRealtimeClient {
+      constructor(supabaseUrl, supabaseKey) {
+        this.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        this.subscription = null;
         this.listeners = {};
       }
 
-      connect() {
-        return new Promise((resolve, reject) => {
-          try {
-            this.ws = new WebSocket(this.url);
+      async connect() {
+        try {
+          // Verificar conexión inicial
+          const { data, error } = await this.supabase
+            .from('llamados')
+            .select('count')
+            .limit(1);
 
-            this.ws.onopen = () => {
-              console.log('✅ Conectado');
-              this.emit('connected');
-              resolve();
-            };
+          if (error) throw error;
 
-            this.ws.onmessage = (event) => {
-              const message = JSON.parse(event.data);
-              console.log('📨', message);
-              this.emit(message.type, message);
-            };
+          // Suscribirse a cambios en tiempo real
+          this.subscription = this.supabase
+            .channel('llamados_changes')
+            .on('postgres_changes', 
+              { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'llamados' 
+              }, 
+              (payload) => {
+                console.log('📨 Nuevo llamado:', payload);
+                this.emit('nuevo_llamado', { data: payload.new });
+              }
+            )
+            .subscribe((status) => {
+              console.log('📡 Status de suscripción:', status);
+              if (status === 'SUBSCRIBED') {
+                this.emit('connected');
+              } else if (status === 'CHANNEL_ERROR') {
+                this.emit('error', new Error('Error en canal de Supabase'));
+              }
+            });
 
-            this.ws.onerror = (error) => {
-              console.error('❌ Error:', error);
-              this.emit('error', error);
-              reject(error);
-            };
-
-            this.ws.onclose = () => {
-              console.log('🔌 Desconectado');
-              this.emit('disconnected');
-              this.attemptReconnect();
-            };
-          } catch (error) {
-            reject(error);
-          }
-        });
-      }
-
-      attemptReconnect() {
-        setTimeout(() => {
-          this.connect().catch(() => this.attemptReconnect());
-        }, this.reconnectInterval);
+          return true;
+        } catch (error) {
+          console.error('❌ Error conectando a Supabase:', error);
+          throw error;
+        }
       }
 
       disconnect() {
-        if (this.ws) this.ws.close();
-      }
-
-      ping() {
-        this.send({ type: 'ping' });
-      }
-
-      reportarReproduccion(id) {
-        this.send({ type: 'reproducir', id });
-      }
-
-      send(message) {
-        if (this.ws && this.ws.readyState === 1) {
-          this.ws.send(JSON.stringify(message));
+        if (this.subscription) {
+          this.supabase.removeChannel(this.subscription);
+          this.subscription = null;
         }
       }
 
@@ -374,120 +762,18 @@
     }
 
     /**
-     * Funciones de UI
+     * Cargar configuración de Supabase desde el servidor
      */
-    function log(message) {
-      const logDiv = document.getElementById('log');
-      const entry = document.createElement('div');
-      entry.className = 'log-entry';
-      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-      logDiv.appendChild(entry);
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
-
-    function updateStatus(connected) {
-      const status = document.getElementById('status');
-      if (connected) {
-        status.textContent = '🟢 Conectado';
-        status.className = 'status connected';
-      } else {
-        status.textContent = '⚫ Desconectado';
-        status.className = 'status disconnected';
-      }
-    }
-
-    async function crearLlamado() {
-      const turno = document.getElementById('turno').value;
-      const paciente = document.getElementById('paciente').value;
-      const consultorio = document.getElementById('consultorio').value;
-
+    async function loadSupabaseConfig() {
       try {
-        log(`➕ Creando llamado para ${paciente} (Turno ${turno})`);
-        const response = await fetch('http://localhost:8000/api/llamados/crear', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ turno_numero: turno, paciente_nombre: paciente, consultorio })
-        });
-
-        const result = await response.json();
-        if (result.status === 'success') {
-          log('✅ Llamado creado correctamente');
-        }
+        const response = await fetch('/api/supabase-config');
+        const config = await response.json();
+        SUPABASE_URL = config.SUPABASE_URL;
+        SUPABASE_ANON_KEY = config.SUPABASE_KEY;
+        addLog('✅ Configuración de Supabase cargada');
       } catch (error) {
-        log(`❌ Error: ${error.message}`);
-      }
-    }
-
-    async function obtenerPendientes() {
-      try {
-        log('⏳ Obteniendo llamados pendientes...');
-        const response = await fetch('http://localhost:8000/api/llamados/pendientes');
-        const result = await response.json();
-
-        const llamadosDiv = document.getElementById('llamados');
-        llamadosDiv.innerHTML = '';
-
-        if (result.data) {
-          const item = document.createElement('div');
-          item.className = 'llamado-item';
-          item.innerHTML = `
-            <p><strong>Turno:</strong> ${result.data.turno_numero}</p>
-            <p><strong>Paciente:</strong> ${result.data.paciente_nombre}</p>
-            <p><strong>Consultorio:</strong> ${result.data.consultorio}</p>
-            <p><strong>Texto:</strong> ${result.data.texto_completo}</p>
-            <div class="time">${new Date(result.data.created_at).toLocaleString()}</div>
-          `;
-          llamadosDiv.appendChild(item);
-          log('✅ Pendiente cargado');
-        } else {
-          llamadosDiv.innerHTML = '<p style="color: #999; text-align: center;">✅ No hay pendientes</p>';
-          log('ℹ️ No hay llamados pendientes');
-        }
-      } catch (error) {
-        log(`❌ Error: ${error.message}`);
-      }
-    }
-
-    async function obtenerUltimos() {
-      try {
-        log('📋 Obteniendo últimos 10 llamados...');
-        const response = await fetch('http://localhost:8000/api/llamados?limit=10');
-        const result = await response.json();
-
-        const llamadosDiv = document.getElementById('llamados');
-        llamadosDiv.innerHTML = '';
-
-        if (result.data && result.data.length > 0) {
-          result.data.forEach(llamado => {
-            const item = document.createElement('div');
-            item.className = `llamado-item ${llamado.reproducido ? 'reproducido' : ''}`;
-            item.innerHTML = `
-              <p><strong>Turno ${llamado.turno_numero}:</strong> ${llamado.paciente_nombre}</p>
-              <p>Consultorio ${llamado.consultorio} ${llamado.reproducido ? '✅' : '⏳'}</p>
-              <div class="time">${new Date(llamado.created_at).toLocaleString()}</div>
-            `;
-            llamadosDiv.appendChild(item);
-          });
-          log(`✅ ${result.data.length} llamados cargados`);
-        }
-      } catch (error) {
-        log(`❌ Error: ${error.message}`);
-      }
-    }
-
-    function addEvento(tipo, message) {
-      const eventosDiv = document.getElementById('eventos');
-      const evento = document.createElement('div');
-      evento.className = `evento ${tipo}`;
-      evento.innerHTML = `
-        <strong>${tipo === 'nuevo' ? '📣' : '🔊'} ${tipo.toUpperCase()}</strong><br>
-        ${JSON.stringify(message, null, 2)}
-      `;
-      eventosDiv.insertBefore(evento, eventosDiv.firstChild);
-
-      // Limitar a últimos 20 eventos
-      while (eventosDiv.children.length > 20) {
-        eventosDiv.removeChild(eventosDiv.lastChild);
+        addLog(`❌ Error cargando configuración: ${error.message}`);
+        throw error;
       }
     }
 
@@ -495,46 +781,72 @@
      * Inicialización
      */
     async function init() {
-      log('🔄 Conectando al servidor...');
-
-      client = new LlamadosClient();
-
-      client.on('connected', () => {
-        updateStatus(true);
-        log('✅ Conectado al servidor');
-        client.ping();
-      });
-
-      client.on('disconnected', () => {
-        updateStatus(false);
-        log('❌ Desconectado del servidor');
-      });
-
-      client.on('nuevo_llamado', (message) => {
-        log(`📣 Nuevo llamado: ${message.data.paciente_nombre} (Turno ${message.data.turno_numero})`);
-        addEvento('nuevo', message.data);
-      });
-
-      client.on('llamado_reproducido', (message) => {
-        log(`🔊 Llamado reproducido: ID ${message.id}`);
-        addEvento('reproducido', { id: message.id });
-      });
-
-      client.on('pong', () => {
-        log('🏓 Pong recibido');
-      });
+      initVoices();
+      addLog('🔄 Iniciando sistema con Supabase Real-time...');
 
       try {
-        await client.connect();
+        // Cargar configuración de Supabase
+        await loadSupabaseConfig();
+
+        state.supabase = new SupabaseRealtimeClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        state.supabase.on('connected', () => {
+          updateStatus(true);
+          addLog('✅ Conectado a Supabase Real-time');
+        });
+
+        state.supabase.on('disconnected', () => {
+          updateStatus(false);
+          addLog('❌ Desconectado de Supabase');
+        });
+
+        state.supabase.on('nuevo_llamado', async (message) => {
+          const { data } = message;
+          addLog(`📣 NUEVO LLAMADO: ${data.paciente_nombre} (Turno ${data.turno_numero})`);
+          
+          mostrarLlamado(data.turno_numero, data.paciente_nombre, data.consultorio);
+          
+          await reproducirLlamado(
+            data.turno_numero,
+            data.paciente_nombre,
+            data.consultorio
+          );
+
+          state.reproducidos++;
+          document.getElementById('infoCount').textContent = state.reproducidos;
+        });
+
+        state.supabase.on('error', (error) => {
+          addLog(`❌ Error: ${error.message}`);
+        });
+
+        await state.supabase.connect();
       } catch (error) {
-        log(`❌ Error de conexión: ${error.message}`);
+        addLog(`❌ Error de conexión: ${error.message}`);
+        updateStatus(false);
       }
     }
 
+    // Event listeners para configuración
+    document.getElementById('volumeRange').addEventListener('input', (e) => {
+      document.getElementById('volumeDisplay').textContent = e.target.value + '%';
+    });
+
+    document.getElementById('speedRange').addEventListener('input', (e) => {
+      const speed = (parseFloat(e.target.value) * 10).toFixed(0) / 10;
+      document.getElementById('speedDisplay').textContent = speed + 'x';
+    });
+
+    document.getElementById('languageSelect').addEventListener('change', () => {
+      updateVoiceInfo();
+      addLog('🌐 Idioma cambiado');
+    });
+
     // Iniciar cuando carga la página
     window.addEventListener('load', init);
+
     window.addEventListener('beforeunload', () => {
-      if (client) client.disconnect();
+      if (state.supabase) state.supabase.disconnect();
     });
   </script>
 </body>

@@ -127,6 +127,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Configuración de Supabase para el frontend
+app.get('/api/supabase-config', (req, res) => {
+  res.json({
+    SUPABASE_URL: SUPABASE_URL,
+    SUPABASE_KEY: SUPABASE_KEY
+  });
+});
+
 // Obtener últimos llamados
 app.get('/api/llamados', async (req, res) => {
   try {
