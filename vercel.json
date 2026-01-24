@@ -1,23 +1,17 @@
 {
   "version": 2,
   "name": "llamados-dra-reyes",
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/server.js"
-    }
-  ],
   "functions": {
     "server.js": {
       "maxDuration": 10
     }
   },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/server.js"
+    }
+  ],
   "env": {
     "NODE_ENV": "production"
   },
