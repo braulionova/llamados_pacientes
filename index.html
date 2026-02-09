@@ -483,16 +483,54 @@
      * Inicializar voces disponibles
      */
     function initVoices() {
+      // Intentar obtener voces inmediatamente
       state.voices = state.synth.getVoices();
+      
       if (state.voices.length === 0) {
+        // Si no hay voces disponibles, esperar al evento onvoiceschanged
         state.synth.onvoiceschanged = () => {
           state.voices = state.synth.getVoices();
           console.log('🎤 Voces disponibles:', state.voices.map(v => `${v.name} (${v.lang})`));
           updateVoiceInfo();
+          // Activar el sistema de voz con una prueba silenciosa
+          activateVoiceSystem();
         };
       } else {
         console.log('🎤 Voces disponibles:', state.voices.map(v => `${v.name} (${v.lang})`));
         updateVoiceInfo();
+        // Activar el sistema de voz con una prueba silenciosa
+        activateVoiceSystem();
+      }
+    }
+
+    /**
+     * Activar el sistema de voz con una prueba inicial silenciosa
+     * Esto asegura que el navegador permita la reproducción automática
+     */
+    function activateVoiceSystem() {
+      try {
+        // Crear un utterance de prueba muy corto y silencioso
+        const testUtterance = new SpeechSynthesisUtterance('');
+        testUtterance.volume = 0.01; // Volumen muy bajo
+        testUtterance.rate = 2; // Muy rápido para que termine rápido
+        
+        // Si hay voces disponibles, usar la mejor voz
+        const languageCode = document.getElementById('languageSelect').value;
+        const bestVoice = getBestVoice(languageCode);
+        if (bestVoice) {
+          testUtterance.voice = bestVoice;
+        }
+        
+        // Reproducir y cancelar inmediatamente para activar el sistema
+        state.synth.speak(testUtterance);
+        // Cancelar inmediatamente después de iniciar (esto activa el sistema)
+        setTimeout(() => {
+          state.synth.cancel();
+          console.log('✅ Sistema de voz activado y listo');
+          addLog('🎤 Sistema de voz inicializado correctamente');
+        }, 50);
+      } catch (error) {
+        console.warn('⚠️ Error al activar sistema de voz:', error);
       }
     }
 
@@ -797,8 +835,9 @@
      * Inicialización
      */
     async function init() {
-      initVoices();
       addLog('🔄 Iniciando sistema con Supabase Real-time...');
+      // Inicializar voces primero, antes de cualquier otra cosa
+      initVoices();
 
       try {
         // Cargar configuración de Supabase
@@ -857,6 +896,16 @@
       updateVoiceInfo();
       addLog('🌐 Idioma cambiado');
     });
+
+    // Inicializar voces inmediatamente cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initVoices();
+      });
+    } else {
+      // DOM ya está listo
+      initVoices();
+    }
 
     // Iniciar cuando carga la página
     window.addEventListener('load', init);
