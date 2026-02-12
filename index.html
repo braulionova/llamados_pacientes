@@ -907,8 +907,14 @@
       initVoices();
     }
 
-    // Iniciar cuando carga la página
-    window.addEventListener('load', init);
+    // Iniciar cuando carga la página y activar voz automáticamente
+    window.addEventListener('load', () => {
+      init();
+      // Activar el sistema de voz automáticamente al cargar la página
+      setTimeout(() => {
+        activateVoiceSystem();
+      }, 100);
+    });
 
     window.addEventListener('beforeunload', () => {
       if (state.supabase) state.supabase.disconnect();
